@@ -1,13 +1,14 @@
 import numpy as np
 import networkx as nx
+import random
 
 class TriangularBalance:
-    def __init__(self, size, initialRatio, ageFactor, noiseType):
+    def __init__(self, size, initialRatio, AgeExponent, noiseType):
         self.Size           = size
         self.TrianglesOnLink= self.LinkTriangles()
         self.Triangles      = self.TriangleCount()
         self.InitRatio      = initialRatio
-        self.AgeFactor      = ageFactor
+        self.AgeExponent    = AgeExponent
         self.NoiseType      = noiseType
         self.NetworkInitiator()
     #region Initial Functions
@@ -22,11 +23,11 @@ class TriangularBalance:
 
     # This function initializes the network at the begining of the run
     def NetworkInitiator(self):
-        adjMatrix = np.random.rand(self.Size,self.Size)
-        adjMatrix[adjMatrix < self.InitRatio]  = -1
-        adjMatrix[adjMatrix >= self.InitRatio] = 1
-        np.fill_diagonal(adjMatrix, 0)        
-        self.InitialNetwork = -adjMatrix
+        tempMatrix = np.random.rand(self.Size,self.Size)
+        tempMatrix[tempMatrix < self.InitRatio]  = -1
+        tempMatrix[tempMatrix >= self.InitRatio] = 1
+        adjMatrix = np.tril(-tempMatrix, -1) + np.tril(-tempMatrix,-1).T      
+        self.InitialNetwork = adjMatrix
         self.Network        = self.InitialNetwork
         self.Energy         = self.NetworkEnergy()
     
@@ -49,9 +50,21 @@ class TriangularBalance:
         linkSign = self.Network[adjTuple]
         linkRow  = self.Network[adjTuple[0]]
         linkCol  = self.Network[adjTuple[1]]
-        linkEng  = float(-1 * np.inner(linkRow, linkCol) * linkSign) / self.TrianglesOnLink
+        linkEng  = float(-1.0 * np.inner(linkRow, linkCol) * linkSign) / self.Triangles
         return(linkEng)
 
+    def TriadDynamics(self, itterateExp):
+        itterateLength = self.Size ** itterateExp
+        for i in range(itterateLength):
+            link = tuple(random.sample(range(0,self.Size-1),2))
+            linkSign = self.Network[link]
+            linkEnergy = self.LinkEnergy(link)
+            tempEnergy = linkEnergy + 1/(2 * self.Triangles) if random.random() < 0.5 else linkEnergy - 1/(2 * self.Triangles)
+            tempSign = linkSign if tempEnergy < 0 else -linkSign
+            delta = abs(tempSign - linkSign) * linkEnergy
+            self.Energy -= delta
+            self.Network[link] = tempSign
+            self.Network[link[1]][link[0]] = tempSign
     #endregion
 
 

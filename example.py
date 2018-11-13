@@ -1,4 +1,6 @@
 import balance as blc
-
-nblc = blc.TriangularBalance(21,1,0,0)
-print(nblc.NetworkEnergy())
+import random
+nblc = blc.TriangularBalance(45,0.7,0,0)
+print(nblc.Energy)
+nblc.TriadDynamics(4)
+print(nblc.Energy)
