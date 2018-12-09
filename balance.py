@@ -114,15 +114,19 @@ class TriangularBalance:
     def BaseDynamics(self):
         # dynamics time length
         itterateLength = self.Size ** self.ItterateExp
-        for _ in range(itterateLength):
+        TimeLine = np.zeros((itterateLength,2))
+        for Time in range(itterateLength):
+            TimeLine[Time,0] = self.Network.mean()
+            TimeLine[Time,1] = self.Energy
             self.LinkBaseDynamics()
+        return(TimeLine)
 
     def LinkAgeCheck(self, Age):
         # chack if link's age accepts the change
-        agePass = int(random.random() < Age ** (self.AgeExponent - 1))
+        agePass = int(random.random() < float(Age) ** (self.AgeExponent - 1))
         return agePass
 
-    def LinkAgedDynamics(self):
+    def LinkAgedDynamics(self, Time):
         # choose a random link
         link        = tuple(random.sample(range(0, self.Size-1), 2))
         # get the sign
@@ -130,7 +134,7 @@ class TriangularBalance:
         # link energy
         linkEnergy  = self.LinkEnergy(link)
         # get the age of link
-        linkAge     = self.SystemTime - self.BirthTime[link]
+        linkAge     = Time - self.BirthTime[link]
         # check if it will change due to energy
         engStat     = self.LinkEnergyCheck(linkEnergy, linkSign)
         # check if the age permits the change
@@ -149,16 +153,19 @@ class TriangularBalance:
         self.BirthTime[link[1]][link[0]]+= acceptStat * linkAge / 2
 
     def AgedDynamics(self):
-        print("Aged Dynamics")
+        # print("Aged Dynamics")
         # dynamics time length
         itterateLength = self.Size ** self.ItterateExp
-        for _ in range(itterateLength):
-            self.LinkAgedDynamics()
-            self.SystemTime += 1
+        TimeLine = np.zeros((itterateLength,2))
+        for Time in range(itterateLength):
+            TimeLine[Time,0] = self.Network.mean()
+            TimeLine[Time,1] = self.Energy
+            self.LinkAgedDynamics(Time + 1)
+        return(TimeLine)
 
     def TriadDynamics(self, itterateExp):
         self.ItterateExp = itterateExp
         # check if system has age or not
         aged = 0 < self.AgeExponent < 1
-        self.AgedDynamics() if aged else self.BaseDynamics()
+        self.TimeLine = self.AgedDynamics() if aged else self.BaseDynamics()
     # endregion
